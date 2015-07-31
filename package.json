@@ -1,0 +1,20 @@
+{
+  "name": "houston",
+  "version": "1.0.0",
+  "description": "rocket base app",
+  "main": "server.js",
+  "dependencies": {
+    "serialport": "^1.7.4",
+    "socket.io": "^1.3.6"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "test",
+    "start": "node server.js"
+  },
+  "keywords": [
+    "rocket"
+  ],
+  "author": "Keon Woo Kim",
+  "license": "MIT"
+}
