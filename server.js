@@ -7,7 +7,7 @@ var serialport = require("serialport");
 var SerialPort = serialport.SerialPort; // localize object constructor
 
 
-var PORT_NAME = 'COM4';
+var PORT_NAME = 'COM8';
 
 
 var cleanData = ''; // this stores the clean data
@@ -20,8 +20,28 @@ app.get('/', function (req, res) {
   res.sendFile(__dirname + '/index.html');
 });
 
-app.get('/smoothie.js', function (req, res){
-  res.sendFile(__dirname + '/resources/smoothie.js');
+app.get('/jquery.js', function (req, res){
+  res.sendFile(__dirname + '/resources/jquery.js');
+});
+
+app.get('/socketio.js', function (req, res){
+  res.sendFile(__dirname + '/resources/socketio.js');
+});
+
+app.get('/bootstrap.js', function (req, res){
+  res.sendFile(__dirname + '/resources/bootstrap.js');
+});
+
+app.get('/highcharts.js', function (req, res){
+  res.sendFile(__dirname + '/resources/highcharts.js');
+});
+
+app.get('/exporting.js', function (req, res){
+  res.sendFile(__dirname + '/resources/exporting.js');
+});
+
+app.get('/bootstrap.css', function (req, res){
+  res.sendFile(__dirname + '/resources/bootstrap.css');
 });
 
 app.get('/theme.js', function (req, res){
@@ -43,12 +63,6 @@ io.sockets.on('connection', function (socket) {
   socket.on('chat message', function(msg){
     io.emit('chat message', msg);
   });
-
-  serialPort.write("1", function(err, results) {
-    console.log('err ' + err);
-    console.log('results ' + results);
-  });
-  var max = 100
 });
 
 
@@ -66,53 +80,64 @@ function serialListener(){
  
   serialPort.on("open", function () {
     console.log('open serial communication');
-         // Listens to incoming data
       serialPort.on('data', function(data) { 
-
            receivedData = data.toString();
-           // console.log(receivedData)
-           // console.log("got: "+receivedData);
-           // if(receivedData.indexOf("a/g") > -1){            
-           //  console.log("received a/g");
-           // }
-           // if(receivedData.indexOf("mag") > -1){
-           //  console.log("received mag");
-           // }
+
+           var x = (new Date()).getTime(); // current time
+           if(receivedData.indexOf("mag")>-1){
+              var data = receivedData.split(":")[1];
+              fs.appendFile('./maglog.txt', (new Date(x))+"," + data, function (err) {
+                  if (err) throw err;
+                  console.log("logged")
+              });
+           }
+           // console.log(receivedData);
+           if(receivedData.indexOf("a/g") > -1){
+              var x = (new Date()).getTime(); // current time      
+              var data = receivedData.split(":")[1];
+              var ax = data.split(",")[0]
+              var ay = data.split(",")[1]
+              var az = data.split(",")[2]
+              // var gx = data.split(",")[3]
+              // var gy = data.split(",")[4]
+              // var gz = data.split(",")[5]
+
+              fs.appendFile('./aglog.txt', (new Date(x))+","+data, function (err) {
+                  if (err) throw err;
+                  console.log("logged")
+              });
+              io.emit('accel', {
+                x: x,
+                ax: ax,
+                ay: ay,
+                az: az
+              });
+           }
            if(receivedData.indexOf("bar") > -1){
               var data = receivedData.split(":")[1];
               var temperature = data.split(",")[0];
               var pressure = data.split(",")[1];
               var sealevel = data.split(",")[2]
-              // console.log(temperature);
-              // console.log(pressure);
-              // console.log(sealevel);
-              var x = (new Date()).getTime(); // current time
-              var tempY = temperature;//Math.floor((Math.random() * max) + 1);
-              io.emit('temperature', {
-                x: x,
-                y: temperature
+              // console.log("TEMPERATURE", temperature);
+              // console.log("PRESSURE", pressure);
+              // console.log("SEALEVEL", sealevel);
+              var originalSealevel = 1011;
+              var altitude = 44330 * (1-(Math.pow((sealevel/originalSealevel), (1/5.255))))
+              
+              fs.appendFile('./tpsalog.txt',(new Date(x))+","+ data, function (err) {
+                  if (err) throw err;
+                  console.log("logged")
               });
-              io.emit('temperatureMessage', {
+              io.emit('tpsa', {
                 x: x,
-                y: temperature
-              });
-              io.emit('pressure', {
-                x: x,
-                y: pressure
-              });
-              io.emit('pressureMessage', {
-                x: x,
-                y: pressure
-              });
-              io.emit('sealevel', {
-                x: x,
-                y: sealevel
-              });
-              io.emit('sealevelPressure', {
-                x: x,
-                y: sealevel
+                temperature: temperature,
+                pressure: pressure,
+                sealevel: sealevel,
+                altitude: altitude
               });
            }
+
+           
 
     });  
   });  
