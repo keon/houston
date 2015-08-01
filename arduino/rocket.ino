@@ -5,6 +5,7 @@
 //ms5611 isn't included in I2cdev, so this is a standalone library
 #include "MS5611.h"
 #include <SoftwareSerial.h>
+#include<Servo.h>
 
 // Define NewSoftSerial TX/RX pins
 uint8_t ssRX = 0;
@@ -14,6 +15,8 @@ SoftwareSerial xbee(ssRX, ssTX);
 MPU6050 accelgyro;
 HMC5883L magcompass;
 MS5611 baropress;
+Servo servo;
+
 
 //accelgyro variables
 int16_t ax, ay, az;
@@ -23,6 +26,13 @@ int16_t mx, my, mz;
 //baropress variables
 double myRealAltitude = 30;
 
+
+const int buzzerPin = 4;
+
+int servoPin = 11;
+int nSwitch = 0;
+int nAngle = 0;
+static float prevSeaLevelPressure = 10000;
 
 #define LED_PIN 13
 bool blinkState = false;
@@ -99,6 +109,9 @@ void setup() {
 
   //configure LED
   pinMode(LED_PIN, OUTPUT);
+        pinMode(servoPin, OUTPUT);
+        pinMode(buzzerPin, OUTPUT);
+        servo.attach(servoPin);
 }
 
 void checkSettings()
@@ -107,6 +120,32 @@ void checkSettings()
   Serial.println(baropress.getOversampling());
 }
 void loop() {
+ if(xbee.available())
+  {
+   nSwitch = xbee.read();
+  }
+
+  switch(nSwitch)
+  {
+    case '0':
+    nAngle = 0;
+    break;
+    case'1':
+    nAngle = 90;
+    break;
+    case'2':
+    nAngle = 180;
+    break;
+  }
+servo.write(nAngle);
+
+for (int i=0; i<500; i++) {  // generate a 1KHz tone for 1/2 second
+ digitalWrite(buzzerPin, HIGH);
+ delayMicroseconds(500);
+  digitalWrite(buzzerPin, LOW);
+ delayMicroseconds(500);
+}
+  
 
     // read raw accel/gyro measurements from device
     accelgyro.getMotion6(&ax, &ay, &az, &gx, &gy, &gz);
@@ -140,25 +179,32 @@ void loop() {
 //    xbee.print(realTemperature); xbee.print(",");
 //    xbee.print(realPressure/100); xbee.print(",");
 //    xbee.println(seaLevelPressure/100);
-    Serial.print("a/g:");
-    Serial.print(ax); Serial.print(",");
-    Serial.print(ay); Serial.print(",");
-    Serial.print(az); Serial.print(",");
-    Serial.print(gx); Serial.print(",");
-    Serial.print(gy); Serial.print(",");
-    Serial.println(gz);
-    Serial.print("mag:");
-    Serial.print(mx); Serial.print(",");
-    Serial.print(my); Serial.print(",");
-    Serial.println(mz); 
 
-    Serial.print("bar:");
-    Serial.print(realTemperature); Serial.print(",");
-    Serial.print(realPressure/100); Serial.print(",");
-    Serial.println(seaLevelPressure/100);
+//    Serial.print("a/g:");
+//    Serial.print(ax); Serial.print(",");
+//    Serial.print(ay); Serial.print(",");
+//    Serial.print(az); Serial.print(",");
+//    Serial.print(gx); Serial.print(",");
+//    Serial.print(gy); Serial.print(",");
+//    Serial.println(gz);
+//    Serial.print("mag:");
+//    Serial.print(mx); Serial.print(",");
+//    Serial.print(my); Serial.print(",");
+//    Serial.println(mz); 
+//    Serial.print("bar:");
+//    Serial.print(realTemperature); Serial.print(",");
+//    Serial.print(realPressure/100); Serial.print(",");
+//    Serial.println(seaLevelPressure/100);
+    
+    Serial.print("prevSeaLevelPressure"); Serial.println(prevSeaLevelPressure);
+    Serial.print("seaLevelPressure"); Serial.println(seaLevelPressure);   
+    if((prevSeaLevelPressure-seaLevelPressure)>1){
+      prevSeaLevelPressure = seaLevelPressure;
+    }    
+    
 
   // blink LED to indicate activity
   blinkState = !blinkState;
   digitalWrite(LED_PIN, blinkState);
-  delay(100);
+  delay(350);
 }

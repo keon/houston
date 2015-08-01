@@ -61,8 +61,23 @@ io.sockets.on('connection', function (socket) {
  
 
   socket.on('chat message', function(msg){
-    io.emit('chat message', msg);
+      io.emit('chat message', msg);
+    });
+
+  socket.on('parachute1', function(){
+    serialPort.write("0", function(err, results) {
+      console.log('err ' + err);
+      console.log('results ' + results);
+    });
   });
+
+  socket.on('parachute2', function(){
+    serialPort.write("2", function(err, results) {
+      console.log('err ' + err);
+      console.log('results ' + results);
+    });
+  });
+
 });
 
 
