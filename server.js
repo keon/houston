@@ -97,13 +97,14 @@ function serialListener(){
     console.log('open serial communication');
       serialPort.on('data', function(data) { 
            receivedData = data.toString();
+           console.log(receivedData);
 
            var x = (new Date()).getTime(); // current time
            if(receivedData.indexOf("mag")>-1){
               var data = receivedData.split(":")[1];
               fs.appendFile('./maglog.txt', (new Date(x))+"," + data, function (err) {
                   if (err) throw err;
-                  console.log("logged")
+                  // console.log("logged")
               });
            }
            // console.log(receivedData);
@@ -152,7 +153,16 @@ function serialListener(){
               });
            }
 
-           
+           if(receivedData.indexOf("state") > -1){
+            var data = receivedData.split(":")[1];
+            fs.appendFile('./state.txt',(new Date(x))+","+ data, function (err) {
+                  if (err) throw err;
+                  console.log("logged")
+            });
+            io.emit("state", {
+              parachute: data
+            });
+           }
 
     });  
   });  

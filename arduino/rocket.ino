@@ -32,7 +32,9 @@ const int buzzerPin = 4;
 int servoPin = 11;
 int nSwitch = 0;
 int nAngle = 0;
-static float prevSeaLevelPressure = 10000;
+static float prevSeaLevelPressure = 900000;
+static float prevTemperature = 0;
+bool parachuteState = false;
 
 #define LED_PIN 13
 bool blinkState = false;
@@ -120,9 +122,8 @@ void checkSettings()
   Serial.println(baropress.getOversampling());
 }
 void loop() {
- if(xbee.available())
-  {
-   nSwitch = xbee.read();
+ if(Serial.available()){
+   nSwitch = Serial.read();
   }
 
   switch(nSwitch)
@@ -137,14 +138,8 @@ void loop() {
     nAngle = 180;
     break;
   }
-servo.write(nAngle);
 
-for (int i=0; i<500; i++) {  // generate a 1KHz tone for 1/2 second
- digitalWrite(buzzerPin, HIGH);
- delayMicroseconds(500);
-  digitalWrite(buzzerPin, LOW);
- delayMicroseconds(500);
-}
+
   
 
     // read raw accel/gyro measurements from device
@@ -162,49 +157,60 @@ for (int i=0; i<500; i++) {  // generate a 1KHz tone for 1/2 second
     //accelgyro.getAcceleration(&ax, &ay, &az);
     //accelgyro.getRotation(&gx, &gy, &gz);
 
-    // display tab-separated accel/gyro x/y/z values
-//    xbee.print("a/g:");
-//    xbee.print(ax); xbee.print(",");
-//    xbee.print(ay); xbee.print(",");
-//    xbee.print(az); xbee.print(",");
-//    xbee.print(gx); xbee.print(",");
-//    xbee.print(gy); xbee.print(",");
-//    xbee.print(gz);
-//    xbee.print("mag:");
-//    xbee.print(mx); xbee.print(",");
-//    xbee.print(my); xbee.print(",");
-//    xbee.println(mz); 
-//
-//    xbee.print("bar:");
-//    xbee.print(realTemperature); xbee.print(",");
-//    xbee.print(realPressure/100); xbee.print(",");
-//    xbee.println(seaLevelPressure/100);
-
-//    Serial.print("a/g:");
-//    Serial.print(ax); Serial.print(",");
-//    Serial.print(ay); Serial.print(",");
-//    Serial.print(az); Serial.print(",");
-//    Serial.print(gx); Serial.print(",");
-//    Serial.print(gy); Serial.print(",");
-//    Serial.println(gz);
-//    Serial.print("mag:");
-//    Serial.print(mx); Serial.print(",");
-//    Serial.print(my); Serial.print(",");
-//    Serial.println(mz); 
-//    Serial.print("bar:");
-//    Serial.print(realTemperature); Serial.print(",");
-//    Serial.print(realPressure/100); Serial.print(",");
-//    Serial.println(seaLevelPressure/100);
+    Serial.print("a/g:");
+    Serial.print(ax); Serial.print(",");
+    Serial.print(ay); Serial.print(",");
+    Serial.print(az); Serial.print(",");
+    Serial.print(gx); Serial.print(",");
+    Serial.print(gy); Serial.print(",");
+    Serial.println(gz);
+    Serial.print("mag:");
+    Serial.print(mx); Serial.print(",");
+    Serial.print(my); Serial.print(",");
+    Serial.println(mz); 
+    Serial.print("bar:");
+    Serial.print(realTemperature); Serial.print(",");
+    Serial.print(realPressure/100); Serial.print(",");
+    Serial.println(seaLevelPressure/100);
     
-    Serial.print("prevSeaLevelPressure"); Serial.println(prevSeaLevelPressure);
-    Serial.print("seaLevelPressure"); Serial.println(seaLevelPressure);   
-    if((prevSeaLevelPressure-seaLevelPressure)>1){
-      prevSeaLevelPressure = seaLevelPressure;
-    }    
-    
+//    Serial.print("prevSeaLevelPressure"); Serial.println(prevSeaLevelPressure);
+//    Serial.print("seaLevelPressure"); Serial.println(seaLevelPressure);   
 
+//    if(seaLevelPressure < prevSeaLevelPressure){
+//      if((prevSeaLevelPressure-seaLevelPressure)>100){
+//        prevSeaLevelPressure = seaLevelPressure;
+//      }
+//    }
+//    if(seaLevelPressure > prevSeaLevelPressure){
+//      if((seaLevelPressure-prevSeaLevelPressure)>200){
+//        nAngle = 180;
+//        parachuteState = true;
+//      }
+//    }
+    if(realTemperature > prevTemperature){
+      if((realTemperature-prevTemperature)>0.15){
+        prevTemperature = realTemperature;
+      }   
+    }
+    if(realTemperature < prevTemperature){
+      if((prevTemperature-realTemperature)>0.15){
+        nAngle = 180;
+        parachuteState = true;
+      }
+    }
+    
+  servo.write(nAngle);
+  if (parachuteState){
+    Serial.println("state: parachute triggered");
+  }
+  
   // blink LED to indicate activity
   blinkState = !blinkState;
   digitalWrite(LED_PIN, blinkState);
+  
+  if(blinkState){
+  digitalWrite(buzzerPin, HIGH);
+  }
+  
   delay(350);
 }
